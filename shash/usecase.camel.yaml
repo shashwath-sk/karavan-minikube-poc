@@ -99,3 +99,10 @@
                         parameters:
                           bridgeEndpoint: true
                           httpMethod: POST
+        - choice:
+            when:
+              - id: when-d2e2
+                expression: {}
+            id: choice-177e
+            otherwise:
+              id: otherwise-7133
