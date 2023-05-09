@@ -2,7 +2,7 @@
     id: Authentication
     from:
       uri: direct:authenticat
-      id: from-d04
+      id: from-d044
       steps:
         - doTry:
             id: doTry-b055
