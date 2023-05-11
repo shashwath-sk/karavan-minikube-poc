@@ -8,7 +8,7 @@
             id: doTry-b055
             doCatch:
               - exception:
-                  - java.lang.RuntimeException
+                  - java.lang.IllegalOperationException
                 id: doCatch-f14c
                 steps:
                   - step:
