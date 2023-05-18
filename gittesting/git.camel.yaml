@@ -5,3 +5,20 @@ TAIL
     from:
       uri: direct:authenticat
       id: from-d04
+ - setBody:
+
+                            id: setBody-79cd
+
+                            expression:
+
+                              simple:
+
+                                expression: |-
+
+                                  {
+
+                                  "message": "username or password is undefined"
+
+                                  }
+
+                                id: simple-1946
