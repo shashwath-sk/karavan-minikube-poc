@@ -1,2 +1,7 @@
 HEAD
 TAIL
+- route:
+    id: Authentication
+    from:
+      uri: direct:authenticat
+      id: from-d04
