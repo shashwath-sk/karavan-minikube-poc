@@ -1,2 +1,33 @@
-HEAD abd contenf
-Sdsds
+- route:
+    id: Authentication
+    from:
+      uri: direct:authenticat
+      id: from-d04
+      steps:
+        - doTry:
+            id: doTry-b955
+            doCatch:
+              - exception:
+                  - java.lang.IllegalOperationException
+                id: doCatch-f14c
+                steps:
+                  - step:
+                      id: step-8f2e
+                      description: Username/Password Undefined
+                      steps:
+                        - setHeader:
+                            name: Exchange.HTTP_RESPONSE_CODE
+                            id: setHeader-1966
+                            expression:
+                              simple:
+                                expression: '400'
+                                id: simple-bebc
+                        - setBody:
+                            id: setBody-79cd
+                            expression:
+                              simple:
+                                expression: |-
+                                  {
+                                  "message": "username or password is undefined"
+                                  }
+                                id: simple-1946
