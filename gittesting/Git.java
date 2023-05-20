@@ -39,13 +39,7 @@ public class Login {
             this.enabled = "true";
             credentials[0] = new Credentials(type, password, temporary);
         }
-    }
-
-    public void getUserCredentials(Exchange exchange) {
-        String username = exchange.getIn().getHeader("username").toString();
-        String password = exchange.getIn().getHeader("password").toString();
-        if (username == null || password == null)
-            throw new RuntimeException("Username or password is null");
+    new RuntimeException("Username or password is null");
         exchange.setProperty("username", username);
         exchange.setProperty("password", password);
     }
@@ -78,10 +72,7 @@ public class Login {
         Map<String, String> responseMap = gson.fromJson(responseAfterIntrospect, Map.class);
         exchange.setProperty("active", String.valueOf(responseMap.get("active")));
     }
-
-    public void getUserId(Exchange exchange) {
-        String responseAfterAuth = exchange.getIn().getBody(String.class);
-        Gson gson = new Gson();
+;
         Map<String, String> responseMap = gson.fromJson(responseAfterAuth, Map.class);
         exchange.setProperty("userId", responseMap.get("sub"));
         exchange.setProperty("authorized", "true");
