@@ -1,1 +1,66 @@
-<br>
+- route:
+    id: Authentication
+    from:
+      uri: direct:authenticat
+      id: from-d04
+      steps:
+        - doTry:
+            id: doTry-b955
+            doCatch:
+              - exception:
+                  - java.lang.IllegalOperationException
+                id: doCatch-f14c
+                steps:
+                  - step:
+                      id: step-8342
+                      description: Username/Password Undefined
+                      steps:
+                        - setHeader:
+                            name: Exchange.HTTP_RESPONSE_CODE
+                            id: setHeader-1966
+                            expression:
+                              simple:
+                                expression: '400'
+                                id: simple-bebc
+                        - setBody:
+                            id: setBody-79cd
+                            expression:
+                              simple:
+                                expression: |-
+                                  {
+                                  "message": "username or password is undefined"
+                                  }
+                                id: simple-1946
+            steps:
+              - step:
+                  id: step-0e95
+                  description: Authentication
+                  steps:
+                    - bean:
+                        id: bean-d8b1
+                        ref: loginBean
+                        method: getUserCredentials
+                    - removeHeaders:
+                        pattern: '*'
+                        id: removeHeaders-208c
+                    - setHeader:
+                        name: Accept
+                        id: setHeader-c9d9
+                        expression:
+                          constant:
+                            expression: application/json
+                            id: constant-bf1c
+                    - setBody:
+                        id: setBody-c157
+                        expression:
+                          simple:
+                            expression: >-
+                              client_id={{notes_744.client-id}}&client_secret={{notes_744.client-secret}}&username=${exchangeProperty[username]}&password=${exchangeProperty[password]}&grant_type={{notes_744.auth-grant-type}}
+                            id: simple-2ddf
+                    - setHeader:
+                        name: Content-Type
+                        id: setHeader-d975
+                        expression:
+                          constant:
+                            expression: application/x-www-form-urlencoded
+                            id: constant-8d78
