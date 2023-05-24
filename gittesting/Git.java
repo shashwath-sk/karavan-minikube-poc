@@ -72,22 +72,9 @@ public class Login {
         Map<String, String> responseMap = gson.fromJson(responseAfterIntrospect, Map.class);
         exchange.setProperty("active", String.valueOf(responseMap.get("active")));
     }
-;
-        Map<String, String> responseMap = gson.fromJson(responseAfterAuth, Map.class);
-        exchange.setProperty("userId", responseMap.get("sub"));
-        exchange.setProperty("authorized", "true");
-    }
 
-    public void unauthorizedMessage(Exchange exchange) {
-        exchange.setProperty("authorized", "false");
-    }
 
-    // public void getAccessTokenFromBody(Exchange exchange){
-    // String requestBody = exchange.getIn().getBody(String.class);
-    // Gson gson = new Gson();
-    // Map<String, String> requestBodyMap = gson.fromJson(requestBody, Map.class);
-    // exchange.setProperty("access_token", requestBodyMap.get("access_token"));
-    // }
+   
 
     public void getAccessTokenFromBody(Exchange exchange) {
         String requestBody = exchange.getIn().getBody(String.class);
