@@ -1,0 +1,1767 @@
+- restConfiguration:
+    dataFormatProperty:
+      - value: "true"
+        key: prettyPrint
+    component: undertow
+    scheme: http
+    host: "{{notes_744.hostname}}"
+    port: "{{notes_744.port}}"
+    contextPath: /notes_744
+    apiContextPath: /notes_744
+    bindingMode: "off"
+    enableCors: true
+    apiComponent: openapi
+- rest:
+    post:
+      - id: post-7e29
+        path: /register
+        to: direct:register
+        consumes: application/json
+        produces: application/json
+        bindingMode: "off"
+    get:
+      - param:
+          - name: username
+            type: header
+            dataType: string
+          - name: password
+            type: header
+            dataType: string
+        id: get-4dfc
+        path: /login
+        to: direct:authenticate
+        consumes: application/json
+        produces: application/json
+        bindingMode: "off"
+      - param:
+          - name: access_token
+            type: header
+        id: get-3fec
+        path: /authorize
+        to: direct:authorize
+        consumes: application/json
+        produces: application/json
+        bindingMode: "off"
+    id: rest-a439
+    path: /auth-service
+    consumes: application/json
+    produces: application/json
+    bindingMode: "off"
+    enableCors: true
+- rest:
+    delete:
+      - param:
+          - name: id
+            type: path
+            dataType: integer
+        id: delete-263b
+        path: /notes/{id}
+        to: direct:deleteNoteById
+        consumes: application/json
+        produces: application/json
+        bindingMode: "off"
+    put:
+      - param:
+          - name: id
+            type: path
+        id: put-bd72
+        path: /notes/{id}
+        to: direct:updateWholeNote
+        consumes: application/json
+        produces: application/json
+        bindingMode: "off"
+    patch:
+      - param:
+          - name: id
+            type: path
+            dataType: integer
+        id: patch-b4da
+        path: /notes/{id}
+        to: direct:updatePartialNote
+        consumes: application/json
+        produces: application/json
+        bindingMode: "off"
+    post:
+      - id: post-eba4
+        path: /notes
+        to: direct:createNote
+        consumes: application/json
+        produces: application/json
+        bindingMode: "off"
+    get:
+      - param:
+          - name: title
+            type: query
+            required: false
+            dataType: string
+          - name: category
+            type: query
+            required: false
+            dataType: string
+        id: get-e751
+        path: /notes
+        to: direct:getAllNotes
+        bindingMode: "off"
+        consumes: application/json
+        produces: application/json
+      - param:
+          - name: id
+            type: path
+        id: get-b308
+        path: /notes/{id}
+        to: direct:getNoteById
+        consumes: application/json
+        produces: application/json
+        bindingMode: "off"
+    id: rest-e382
+    path: /notes-service
+- route:
+    from:
+      uri: direct:authenticate
+      steps:
+        - doTry:
+            steps:
+              - step:
+                  steps:
+                    - bean:
+                        id: bean-d8b1
+                        ref: loginBean
+                        method: getUserCredentials
+                    - removeHeaders:
+                        pattern: "*"
+                        id: removeHeaders-208c
+                    - setHeader:
+                        name: Accept
+                        id: setHeader-c9d9
+                        expression:
+                          constant:
+                            expression: application/json
+                            id: constant-bf1c
+                    - setBody:
+                        id: setBody-c157
+                        expression:
+                          simple:
+                            expression: >-
+                              client_id={{notes_744.client-id}}&client_secret={{notes_744.client-secret}}&username=${exchangeProperty[username]}&password=${exchangeProperty[password]}&grant_type={{notes_744.auth-grant-type}}
+                            id: simple-2ddf
+                    - setHeader:
+                        name: Content-Type
+                        id: setHeader-d975
+                        expression:
+                          constant:
+                            expression: application/x-www-form-urlencoded
+                            id: constant-8d78
+                  id: step-0e95
+                  description: Authentication
+              - doTry:
+                  steps:
+                    - to:
+                        uri: http://{{notes_744.token-endpoint}}
+                        parameters:
+                          bridgeEndpoint: true
+                          httpMethod: POST
+                        id: to-b667
+                  doCatch:
+                    - steps:
+                        - step:
+                            steps:
+                              - setHeader:
+                                  name: Exchange.HTTP_RESPONSE_CODE
+                                  id: setHeader-14f2
+                                  expression:
+                                    simple:
+                                      expression: "404"
+                                      id: simple-a2c5
+                              - setBody:
+                                  id: setBody-82af
+                                  expression:
+                                    simple:
+                                      expression: |-
+                                        {
+                                            "message": "username does not exist or password does not match"
+                                        }
+                                      id: simple-2a23
+                            id: step-b0a0
+                      exception:
+                        - >-
+                          org.apache.camel.http.base.HttpOperationFailedException
+                      id: doCatch-23b0
+                  id: doTry-37f5
+            doCatch:
+              - steps:
+                  - step:
+                      steps:
+                        - setHeader:
+                            name: Exchange.HTTP_RESPONSE_CODE
+                            id: setHeader-1966
+                            expression:
+                              simple:
+                                expression: "400"
+                                id: simple-bebc
+                        - setBody:
+                            id: setBody-79cd
+                            expression:
+                              simple:
+                                expression: >-
+                                  {
+
+                                  "message": "username or password is
+                                  undefined"
+
+                                  }
+                                id: simple-1946
+                      id: step-8f2e
+                exception:
+                  - java.lang.RuntimeException
+                id: doCatch-f14c
+            id: doTry-b055
+      id: from-d04d
+    id: AuthN
+- route:
+    from:
+      uri: direct:authorize
+      steps:
+        - doTry:
+            steps:
+              - step:
+                  steps:
+                    - bean:
+                        id: bean-39a2
+                        ref: loginBean
+                        method: getAccessToken
+                    - setBody:
+                        id: setBody-a5d3
+                        expression:
+                          simple:
+                            expression: >-
+                              token=${exchangeProperty[access_token]}&client_id={{notes_744.client-id}}&client_secret={{notes_744.client-secret}}
+                            id: simple-0d78
+                    - removeHeaders:
+                        pattern: "*"
+                        id: removeHeaders-4074
+                    - setHeader:
+                        name: Accept
+                        id: setHeader-a812
+                        expression:
+                          simple:
+                            expression: application/json
+                            id: simple-5110
+                    - setHeader:
+                        name: Content-Type
+                        id: setHeader-2acb
+                        expression:
+                          simple:
+                            expression: application/x-www-form-urlencoded
+                            id: simple-e60e
+                    - to:
+                        uri: http://{{notes_744.introspect-token-endpoint}}
+                        parameters:
+                          bridgeEndpoint: true
+                          httpMethod: POST
+                        id: to-6bab
+                    - bean:
+                        id: bean-49d6
+                        ref: loginBean
+                        method: checkIfExpired
+                  id: step-bcbe
+              - choice:
+                  when:
+                    - id: when-0098
+                      expression:
+                        simple:
+                          expression: ${exchangeProperty[active]} == "true"
+                          id: simple-6bcd
+                  id: choice-10ca
+                  otherwise:
+                    steps:
+                      - step:
+                          steps:
+                            - removeHeaders:
+                                pattern: "*"
+                                id: removeHeaders-6850
+                            - setHeader:
+                                name: Content-Type
+                                id: setHeader-0e22
+                                expression:
+                                  constant:
+                                    expression: application/x-www-form-urlencoded
+                                    id: constant-dc72
+                            - setHeader:
+                                name: Accept
+                                id: setHeader-1500
+                                expression:
+                                  simple:
+                                    expression: application/json
+                                    id: simple-43c5
+                            - setBody:
+                                id: setBody-d197
+                                expression:
+                                  simple:
+                                    expression: >-
+                                      client_id={{notes_744.client-id}}&client_secret={{notes_744.client-secret}}&refresh_token=${exchangeProperty[refresh_token]}&grant_type={{notes_744.refresh_token}}
+                                    id: simple-07bf
+                          id: step-e2e4
+                      - to:
+                          uri: http://{{notes_744.token-endpoint}}
+                          parameters:
+                            bridgeEndpoint: true
+                            httpMethod: POST
+                          id: to-cf37
+                      - step:
+                          steps:
+                            - removeHeaders:
+                                pattern: "*"
+                                id: removeHeaders-45ee
+                            - bean:
+                                id: bean-67c1
+                                ref: loginBean
+                                method: getAccessTokenFromBody
+                            - setBody:
+                                id: setBody-ae43
+                                expression:
+                                  simple:
+                                    expression: >-
+                                      token=${exchangeProperty[accessToken]}&client_id={{notes_744.client-id}}&client_secret={{notes_744.client-secret}}
+                                    id: simple-afb2
+                            - setHeader:
+                                name: Content-Type
+                                id: setHeader-846c
+                                expression:
+                                  simple:
+                                    expression: application/x-www-form-urlencoded
+                                    id: simple-eb60
+                            - setHeader:
+                                name: Accept
+                                id: setHeader-85c9
+                                expression:
+                                  simple:
+                                    expression: application/json
+                                    id: simple-45fc
+                          id: step-d4e2
+                      - to:
+                          uri: http://{{notes_744.introspect-token-endpoint}}
+                          parameters:
+                            bridgeEndpoint: true
+                            httpMethod: POST
+                          id: to-951a
+                    id: otherwise-ce49
+              - bean:
+                  id: bean-eb25
+                  ref: loginBean
+                  method: getUserId
+            doCatch:
+              - steps:
+                  - step:
+                      steps:
+                        - setHeader:
+                            name: Exchange.HTTP_RESPONSE_CODE
+                            id: setHeader-f605
+                            expression:
+                              simple:
+                                expression: "401"
+                                id: simple-eb28
+                        - setProperty:
+                            name: error
+                            id: setProperty-7581
+                            expression:
+                              simple:
+                                expression: "true"
+                                id: simple-cef8
+                        - setBody:
+                            id: setBody-658d
+                            expression:
+                              simple:
+                                expression: |-
+                                  {
+                                      "message": "Unauthorized , access_token or refresh_token is missing"
+                                  }
+                                id: simple-bc1d
+                      id: step-b53b
+                exception:
+                  - java.lang.RuntimeException
+                  - java.lang.NullPointerException
+                id: doCatch-bac4
+              - steps:
+                  - step:
+                      steps:
+                        - setHeader:
+                            name: Exchange.HTTP_RESPONSE_CODE
+                            id: setHeader-e22f
+                            expression:
+                              simple:
+                                expression: "401"
+                                id: simple-714c
+                        - setProperty:
+                            name: error
+                            id: setProperty-94c2
+                            expression:
+                              simple:
+                                expression: "true"
+                                id: simple-a72b
+                        - setBody:
+                            id: setBody-78e9
+                            expression:
+                              simple:
+                                expression: |-
+                                  {
+                                      "error": "invalid_request",
+                                      "error_description": "Authentication failed."
+                                  }
+                                id: simple-6fb0
+                      id: set error body
+                exception:
+                  - org.apache.camel.http.base.HttpOperationFailedException
+                id: doCatch-f256
+            id: doTry-de94
+      id: from-f2f4
+    id: AuthZ
+- route:
+    from:
+      uri: direct:register
+      steps:
+        - doTry:
+            steps:
+              - bean:
+                  id: bean-1f19
+                  ref: loginBean
+                  method: getUserCredentialsFromBody
+              - step:
+                  steps:
+                    - setHeader:
+                        name: Content-Type
+                        id: setHeader-fbcd
+                        expression:
+                          simple:
+                            expression: application/x-www-form-urlencoded
+                            id: simple-fcd2
+                    - setHeader:
+                        name: Accept
+                        id: setHeader-857b
+                        expression:
+                          simple:
+                            expression: application/json
+                            id: simple-86a2
+                    - setBody:
+                        id: setBody-9e1f
+                        expression:
+                          simple:
+                            expression: >-
+                              client_id={{notes_744.client-id}}&client_secret={{notes_744.client-secret}}&grant_type={{notes_744.grant-type}}
+                            id: simple-78eb
+                  id: step-bbb6
+              - doTry:
+                  steps:
+                    - to:
+                        uri: http://{{notes_744.token-endpoint}}
+                        parameters:
+                          bridgeEndpoint: true
+                          httpMethod: POST
+                        id: to-14c3
+                    - step:
+                        steps:
+                          - bean:
+                              id: bean-b66e
+                              ref: loginBean
+                              method: getAccessTokenFromBody
+                          - setHeader:
+                              name: Authorization
+                              id: setHeader-ee8e
+                              expression:
+                                simple:
+                                  expression: Bearer ${exchangeProperty[accessToken]}
+                                  id: simple-cf93
+                          - setHeader:
+                              name: Content-Type
+                              id: setHeader-972d
+                              expression:
+                                simple:
+                                  expression: application/json
+                                  id: simple-79c6
+                          - setHeader:
+                              name: Accept
+                              id: setHeader-ef1b
+                              expression:
+                                simple:
+                                  expression: application/json
+                                  id: simple-41e6
+                          - setBody:
+                              id: setBody-14f2
+                              expression:
+                                simple:
+                                  expression: ${exchangeProperty[newUserJson]}
+                                  id: simple-a287
+                        id: step-2997
+                    - doTry:
+                        steps:
+                          - to:
+                              uri: http://{{notes_744.add-user-endpoint}}
+                              parameters:
+                                bridgeEndpoint: true
+                                httpMethod: POST
+                              id: to-b08b
+                          - setBody:
+                              id: setBody-39d6
+                              expression:
+                                simple:
+                                  expression: >-
+                                    {
+
+                                    "message": "user registered
+                                    successfully"
+
+                                    }
+                                  id: simple-0ce2
+                        doCatch:
+                          - steps:
+                              - step:
+                                  steps:
+                                    - setHeader:
+                                        name: Exchange.HTTP_RESPONSE_CODE
+                                        id: setHeader-e423
+                                        expression:
+                                          simple:
+                                            expression: "409"
+                                            id: simple-0896
+                                    - setBody:
+                                        id: setBody-7b69
+                                        expression:
+                                          simple:
+                                            expression: |-
+                                              {
+                                                  "errorMessage": "User exists with same username"
+                                              }
+                                            id: simple-801e
+                                  id: step-56dd
+                            exception:
+                              - >-
+                                org.apache.camel.http.base.HttpOperationFailedException
+                            id: doCatch-0e2a
+                        id: doTry-b373
+                  doCatch:
+                    - steps:
+                        - step:
+                            steps:
+                              - setHeader:
+                                  name: Exchange.HTTP_RESPONSE_CODE
+                                  id: setHeader-e31e
+                                  expression:
+                                    simple:
+                                      expression: "500"
+                                      id: simple-908a
+                              - setBody:
+                                  id: setBody-1982
+                                  expression:
+                                    simple:
+                                      expression: >-
+                                        {
+
+                                        "message": "The KeyCloak Server
+                                        encountered internal server error or
+                                        misconfiguration unabe to complete your
+                                        request"
+
+                                        }
+                                      id: simple-b208
+                            id: step-9492
+                      exception:
+                        - org.apache.http.NoHttpResponseException
+                      id: doCatch-e08e
+                    - steps:
+                        - step:
+                            steps:
+                              - setHeader:
+                                  name: Exchange.HTTP_RESPONSE_CODE
+                                  id: setHeader-86b0
+                                  expression:
+                                    simple:
+                                      expression: "401"
+                                      id: simple-ec26
+                              - setBody:
+                                  id: setBody-132c
+                                  expression:
+                                    simple:
+                                      expression: |-
+                                        {
+                                            "error": "invalid_client",
+                                            "error_description": "Invalid client or Invalid client credentials"
+                                        }
+                                      id: simple-dbb3
+                            id: step-e5a4
+                      exception:
+                        - >-
+                          org.apache.camel.http.base.HttpOperationFailedException
+                      id: doCatch-c453
+                  id: doTry-9086
+            doCatch:
+              - steps:
+                  - step:
+                      steps:
+                        - setHeader:
+                            name: Exchange.HTTP_RESPONSE_CODE
+                            id: setHeader-22c3
+                            expression:
+                              simple:
+                                expression: "400"
+                                id: simple-6145
+                        - setBody:
+                            id: setBody-1bd6
+                            expression:
+                              simple:
+                                expression: >-
+                                  {
+
+                                  "message": "username or password is
+                                  missing"
+
+                                  }
+                                id: simple-5025
+                      id: step-fcac
+                exception:
+                  - java.lang.RuntimeException
+                id: doCatch-b56b
+            id: doTry-c054
+      id: from-f86a
+    id: route-c598
+    description: Register
+- route:
+    from:
+      uri: direct:updateWholeNote
+      steps:
+        - step:
+            steps:
+              - bean:
+                  id: bean-9c4f
+                  ref: notesBean
+                  method: setNoteId
+              - bean:
+                  id: bean-db50
+                  ref: notesBean
+                  method: setNoteBody
+            id: step-dbe9
+        - toD:
+            uri: direct:authorize
+            id: toD-8b70
+        - choice:
+            when:
+              - steps:
+                  - doTry:
+                      steps:
+                        - doTry:
+                            steps:
+                              - to:
+                                  uri: kamelet:mysql-sink
+                                  parameters:
+                                    serverName: "{{notes-service.hostname}}"
+                                    serverPort: "{{notes-service.database.port}}"
+                                    username: root
+                                    password: password
+                                    query: >-
+                                      select * from notes where
+                                      noteId=:#${exchangeProperty[id]};
+                                    databaseName: notesdb
+                                  id: to-40f5
+                              - marshal:
+                                  id: marshal-2099
+                                  json:
+                                    id: json-8d3c
+                                    library: jackson
+                              - choice:
+                                  when:
+                                    - steps:
+                                        - step:
+                                            steps:
+                                              - setHeader:
+                                                  name: message
+                                                  id: setHeader-7b5f
+                                                  expression:
+                                                    simple:
+                                                      expression: Note not found
+                                                      id: simple-c674
+                                              - setHeader:
+                                                  name: responseCode
+                                                  id: setHeader-a68a
+                                                  expression:
+                                                    simple:
+                                                      expression: "404"
+                                                      id: simple-ff05
+                                              - bean:
+                                                  id: bean-3ebc
+                                                  ref: notesBean
+                                                  method: sendMessage
+                                            id: step-dcd0
+                                      id: when-4354
+                                      expression:
+                                        simple:
+                                          expression: ${body.length} == 2
+                                          id: simple-7c90
+                                  id: choice-8c8e
+                                  otherwise:
+                                    steps:
+                                      - to:
+                                          uri: kamelet:mysql-sink
+                                          parameters:
+                                            serverName: "{{notes-service.hostname}}"
+                                            serverPort: "{{notes-service.database.port}}"
+                                            username: root
+                                            password: password
+                                            query: >-
+                                              update notes set
+                                              title=:#${exchangeProperty[title]},
+                                              category=:#${exchangeProperty[category]},
+                                              body=:#${exchangeProperty[body]} where
+                                              noteId=:#${exchangeProperty[id]};
+                                            databaseName: notesdb
+                                          id: to-42ad
+                                      - marshal:
+                                          id: marshal-9e45
+                                          json:
+                                            id: json-5a45
+                                      - to:
+                                          uri: kamelet:mysql-sink
+                                          parameters:
+                                            serverName: "{{notes-service.hostname}}"
+                                            serverPort: "{{notes-service.database.port}}"
+                                            username: root
+                                            password: password
+                                            query: >-
+                                              select * from notes where
+                                              noteId=:#${exchangeProperty[id]};
+                                            databaseName: notesdb
+                                          id: to-4b55
+                                    id: otherwise-5fd8
+                            id: doTry-4b59
+                      doCatch:
+                        - steps:
+                            - step:
+                                steps:
+                                  - setHeader:
+                                      name: message
+                                      id: setHeader-fb01
+                                      expression:
+                                        simple:
+                                          expression: Note for the title already exists.
+                                          id: simple-9230
+                                  - setHeader:
+                                      name: responseCode
+                                      id: setHeader-280c
+                                      expression:
+                                        simple:
+                                          expression: "400"
+                                          id: simple-5359
+                                  - bean:
+                                      id: bean-707a
+                                      ref: notesBean
+                                      method: sendMessage
+                                id: step-ce68
+                          exception:
+                            - >-
+                              java.sql.SQLIntegrityConstraintViolationException
+                          id: doCatch-5e86
+                        - steps:
+                            - step:
+                                steps:
+                                  - setHeader:
+                                      name: message
+                                      id: setHeader-a894
+                                      expression:
+                                        simple:
+                                          expression: MySql Connection Error
+                                          id: simple-41c6
+                                  - setHeader:
+                                      name: responseCode
+                                      id: setHeader-e16a
+                                      expression:
+                                        simple:
+                                          expression: "500"
+                                          id: simple-41b6
+                                  - bean:
+                                      id: bean-104a
+                                      ref: notesBean
+                                      method: sendMessage
+                                id: step-a7e8
+                          exception:
+                            - java.sql.SQLException
+                          id: doCatch-2fa8
+                        - steps:
+                            - step:
+                                steps:
+                                  - setHeader:
+                                      name: message
+                                      id: setHeader-c21a
+                                      expression:
+                                        simple:
+                                          expression: Required fields not found
+                                          id: simple-75ef
+                                  - setHeader:
+                                      name: responseCode
+                                      id: setHeader-ea03
+                                      expression:
+                                        simple:
+                                          expression: "400"
+                                          id: simple-3415
+                                  - bean:
+                                      id: bean-452c
+                                      ref: notesBean
+                                      method: sendMessage
+                                id: step-8657
+                          exception:
+                            - java.lang.Exception
+                          id: doCatch-5856
+                      id: doTry-1c08
+                id: when-7550
+                expression:
+                  simple:
+                    expression: ${exchangeProperty[authorized]} == "true"
+                    id: simple-c42d
+            id: choice-7e31
+            otherwise:
+              steps:
+                - step:
+                    steps:
+                      - setHeader:
+                          name: message
+                          id: setHeader-9bba
+                          expression:
+                            simple:
+                              expression: Login to perform this action
+                              id: simple-a224
+                      - setHeader:
+                          name: responseCode
+                          id: setHeader-fe8b
+                          expression:
+                            simple:
+                              expression: "401"
+                              id: simple-5a0d
+                      - bean:
+                          id: bean-fc61
+                          ref: notesBean
+                          method: sendMessage
+                    id: step-9cc0
+              id: otherwise-c0b9
+        - marshal:
+            id: marshal-1e84
+            json:
+              id: json-be58
+              library: jackson
+      id: from-c883
+    id: updateWholeNote
+- route:
+    from:
+      uri: direct:updatePartialNote
+      steps:
+        - bean:
+            id: bean-4ff9
+            ref: notesBean
+            method: updatePartialNote
+        - to:
+            uri: direct:authorize
+            id: to-71e5
+        - choice:
+            when:
+              - steps:
+                  - doTry:
+                      steps:
+                        - to:
+                            uri: kamelet:mysql-sink
+                            parameters:
+                              serverName: "{{notes-service.hostname}}"
+                              serverPort: "{{notes-service.database.port}}"
+                              username: root
+                              password: password
+                              query: >-
+                                select * from notes where
+                                noteId=:#${exchangeProperty[id]};
+                              databaseName: notesdb
+                            id: to-ee70
+                        - marshal:
+                            id: marshal-4292
+                            json:
+                              id: json-c327
+                              library: jackson
+                        - choice:
+                            when:
+                              - steps:
+                                  - step:
+                                      steps:
+                                        - setHeader:
+                                            name: message
+                                            id: setHeader-4a0d
+                                            expression:
+                                              simple:
+                                                expression: Note not found
+                                                id: simple-2be5
+                                        - setHeader:
+                                            name: responseCode
+                                            id: setHeader-119c
+                                            expression:
+                                              simple:
+                                                expression: "404"
+                                                id: simple-1732
+                                        - bean:
+                                            id: bean-f51f
+                                            ref: notesBean
+                                            method: sendMessage
+                                      id: step-47f1
+                                id: when-b258
+                                expression:
+                                  simple:
+                                    expression: ${body.length} == 2
+                                    id: simple-1c16
+                            id: choice-3595
+                            otherwise:
+                              steps:
+                                - to:
+                                    uri: kamelet:mysql-sink
+                                    parameters:
+                                      serverName: "{{notes-service.hostname}}"
+                                      serverPort: "{{notes-service.database.port}}"
+                                      username: root
+                                      password: password
+                                      query: >-
+                                        update notes set
+                                        title=IFNULL(:#${exchangeProperty[title]},
+                                        title),
+                                        category=IFNULL(:#${exchangeProperty[category]},
+                                        category),
+                                        body=IFNULL(:#${exchangeProperty[body]},
+                                        body),
+                                        userId=IFNULL(:#${exchangeProperty[userId]},userId)
+                                        where noteId=:#${exchangeProperty[id]};
+                                      databaseName: notesdb
+                                    id: to-6d33
+                                - marshal:
+                                    id: marshal-8972
+                                    json:
+                                      id: json-4b7b
+                                      library: jackson
+                                - to:
+                                    uri: kamelet:mysql-sink
+                                    parameters:
+                                      serverName: "{{notes-service.hostname}}"
+                                      serverPort: "{{notes-service.database.port}}"
+                                      username: root
+                                      password: password
+                                      query: >-
+                                        select * from notes where
+                                        noteId=:#${exchangeProperty[id]};
+                                      databaseName: notesdb
+                                    id: to-404b
+                              id: otherwise-1d13
+                      doCatch:
+                        - steps:
+                            - step:
+                                steps:
+                                  - setHeader:
+                                      name: message
+                                      id: setHeader-5237
+                                      expression:
+                                        simple:
+                                          expression: Note with same title already exists
+                                          id: simple-0c0d
+                                  - setHeader:
+                                      name: responseCode
+                                      id: setHeader-842a
+                                      expression:
+                                        simple:
+                                          expression: "403"
+                                          id: simple-302d
+                                  - bean:
+                                      id: bean-d5db
+                                      ref: notesBean
+                                      method: sendMessage
+                                id: step-e6fd
+                          exception:
+                            - >-
+                              java.sql.SQLIntegrityConstraintViolationException
+                          id: doCatch-9f29
+                        - steps:
+                            - step:
+                                steps:
+                                  - setHeader:
+                                      name: message
+                                      id: setHeader-3b01
+                                      expression:
+                                        simple:
+                                          expression: MySql Connection Error
+                                          id: simple-0496
+                                  - setHeader:
+                                      name: responseCode
+                                      id: setHeader-985a
+                                      expression:
+                                        simple:
+                                          expression: "500"
+                                          id: simple-7a9c
+                                  - bean:
+                                      id: bean-10d4
+                                      ref: notesBean
+                                      method: sendMessage
+                                id: step-b614
+                          exception:
+                            - java.sql.SQLException
+                          id: doCatch-7fbb
+                      id: doTry-1b12
+                id: when-193e
+                expression:
+                  simple:
+                    expression: ${exchangeProperty[authorized]} == "true"
+                    id: simple-7640
+            id: choice-7fc7
+            otherwise:
+              steps:
+                - step:
+                    steps:
+                      - setHeader:
+                          name: message
+                          id: setHeader-3849
+                          expression:
+                            simple:
+                              expression: Login to perform this action
+                              id: simple-edcf
+                      - setHeader:
+                          name: responseCode
+                          id: setHeader-e542
+                          expression:
+                            simple:
+                              expression: "401"
+                              id: simple-aaa1
+                      - bean:
+                          id: bean-e4e5
+                          ref: notesBean
+                          method: sendMessage
+                    id: step-b50f
+              id: otherwise-4a3e
+        - marshal:
+            id: marshal-3af8
+            json:
+              id: json-271f
+              library: jackson
+      id: from-fa4c
+    id: updatePartialNote
+- route:
+    from:
+      uri: direct:deleteNoteById
+      steps:
+        - bean:
+            id: bean-ca8b
+            ref: notesBean
+            method: setNoteId
+        - to:
+            uri: direct:authorize
+            id: to-3c5e
+        - choice:
+            when:
+              - steps:
+                  - doTry:
+                      steps:
+                        - to:
+                            uri: kamelet:mysql-sink
+                            parameters:
+                              serverName: "{{notes-service.hostname}}"
+                              serverPort: "{{notes-service.database.port}}"
+                              username: root
+                              password: password
+                              query: >-
+                                select * from notes where
+                                noteId=:#${exchangeProperty[id]};
+                              databaseName: notesdb
+                            id: to-6ebf
+                        - marshal:
+                            id: marshal-c820
+                            json:
+                              id: json-73bd
+                        - choice:
+                            when:
+                              - steps:
+                                  - step:
+                                      steps:
+                                        - setHeader:
+                                            name: message
+                                            id: setHeader-3c97
+                                            expression:
+                                              simple:
+                                                expression: Note not found
+                                                id: simple-b067
+                                        - setHeader:
+                                            name: responseCode
+                                            id: setHeader-1df0
+                                            expression:
+                                              simple:
+                                                expression: "404"
+                                                id: simple-e468
+                                        - bean:
+                                            id: bean-49b1
+                                            ref: notesBean
+                                            method: sendMessage
+                                      id: step-f5c5
+                                id: when-50f0
+                                expression:
+                                  simple:
+                                    expression: ${body.length} == 2
+                                    id: simple-c3dd
+                            id: choice-8299
+                            otherwise:
+                              steps:
+                                - to:
+                                    uri: kamelet:mysql-sink
+                                    parameters:
+                                      serverName: "{{notes-service.hostname}}"
+                                      serverPort: "{{notes-service.database.port}}"
+                                      username: root
+                                      password: password
+                                      query: >-
+                                        delete from notes where
+                                        noteId=:#${exchangeProperty[id]};
+                                      databaseName: notesdb
+                                    id: to-731b
+                                - step:
+                                    steps:
+                                      - setHeader:
+                                          name: message
+                                          id: setHeader-4464
+                                          expression:
+                                            simple:
+                                              expression: Note deleted
+                                              id: simple-4ec7
+                                      - setHeader:
+                                          name: responseCode
+                                          id: setHeader-ef48
+                                          expression:
+                                            simple:
+                                              expression: "200"
+                                              id: simple-49f9
+                                      - bean:
+                                          id: bean-5dc6
+                                          ref: notesBean
+                                          method: sendMessage
+                                    id: step-c4fb
+                              id: otherwise-9c19
+                      doCatch:
+                        - steps:
+                            - step:
+                                steps:
+                                  - setHeader:
+                                      name: message
+                                      id: setHeader-89a8
+                                      expression:
+                                        simple:
+                                          expression: MySql Connection Error
+                                          id: simple-2ebd
+                                  - setHeader:
+                                      name: responseCode
+                                      id: setHeader-c7f3
+                                      expression:
+                                        simple:
+                                          expression: "500"
+                                          id: simple-8f27
+                                  - bean:
+                                      id: bean-07eb
+                                      ref: notesBean
+                                      method: sendMessage
+                                id: step-1466
+                          exception:
+                            - java.sql.SQLException
+                          id: doCatch-d080
+                      id: doTry-8272
+                id: when-c4cf
+                expression:
+                  simple:
+                    expression: ${exchangeProperty[authorized]} == "true"
+                    id: simple-9f28
+            id: choice-9d3b
+            otherwise:
+              steps:
+                - step:
+                    steps:
+                      - setHeader:
+                          name: message
+                          id: setHeader-eac5
+                          expression:
+                            simple:
+                              expression: Login to perform this action
+                              id: simple-4eab
+                      - setHeader:
+                          name: responseCode
+                          id: setHeader-1058
+                          expression:
+                            simple:
+                              expression: "401"
+                              id: simple-ccf1
+                      - bean:
+                          id: bean-3be7
+                          ref: notesBean
+                          method: sendMessage
+                    id: step-ce7e
+              id: otherwise-67a2
+        - marshal:
+            id: marshal-caa6
+            json:
+              id: json-e4c3
+              library: jackson
+      id: from-6296
+    id: deleteNoteById
+- route:
+    from:
+      uri: direct:createNote
+      steps:
+        - doTry:
+            steps:
+              - bean:
+                  id: bean-9258
+                  ref: notesBean
+                  method: setNoteBody
+              - to:
+                  uri: direct:authorize
+                  id: to-5222
+              - choice:
+                  when:
+                    - steps:
+                        - doTry:
+                            steps:
+                              - step:
+                                  steps:
+                                    - bean:
+                                        id: bean-71c4
+                                        ref: notesBean
+                                        method: createNote
+                                    - marshal:
+                                        id: marshal-c2ac
+                                        json:
+                                          id: json-c83c
+                                          library: jackson
+                                  id: step-acba
+                              - to:
+                                  uri: kamelet:mysql-sink
+                                  parameters:
+                                    serverName: "{{notes-service.hostname}}"
+                                    serverPort: "{{notes-service.database.port}}"
+                                    username: root
+                                    password: password
+                                    query: >-
+                                      insert into notes(userId, title,
+                                      category, body) values (:#userId,
+                                      :#title, :#category, :#body);
+                                    databaseName: notesdb
+                                  id: to-f125
+                              - step:
+                                  steps:
+                                    - setHeader:
+                                        name: message
+                                        id: setHeader-2216
+                                        expression:
+                                          simple:
+                                            expression: Note created
+                                            id: simple-17cf
+                                    - setHeader:
+                                        name: responseCode
+                                        id: setHeader-703b
+                                        expression:
+                                          simple:
+                                            expression: "201"
+                                            id: simple-fd54
+                                    - bean:
+                                        id: bean-8e5d
+                                        ref: notesBean
+                                        method: sendMessage
+                                  id: step-75ec
+                            doCatch:
+                              - steps:
+                                  - step:
+                                      steps:
+                                        - setHeader:
+                                            name: message
+                                            id: setHeader-496d
+                                            expression:
+                                              simple:
+                                                expression: Note with same title already exists
+                                                id: simple-4c7c
+                                        - setHeader:
+                                            name: responseCode
+                                            id: setHeader-8657
+                                            expression:
+                                              simple:
+                                                expression: "403"
+                                                id: simple-ac98
+                                        - bean:
+                                            id: bean-55c3
+                                            ref: notesBean
+                                            method: sendMessage
+                                      id: step-d28d
+                                exception:
+                                  - >-
+                                    java.sql.SQLIntegrityConstraintViolationException
+                                id: doCatch-e904
+                              - steps:
+                                  - step:
+                                      steps:
+                                        - setHeader:
+                                            name: message
+                                            id: setHeader-8d5d
+                                            expression:
+                                              simple:
+                                                expression: MySql Connection Error
+                                                id: simple-8a3c
+                                        - setHeader:
+                                            name: responseCode
+                                            id: setHeader-6064
+                                            expression:
+                                              simple:
+                                                expression: "500"
+                                                id: simple-f32c
+                                        - bean:
+                                            id: bean-83fe
+                                            ref: notesBean
+                                            method: sendMessage
+                                      id: step-6114
+                                exception:
+                                  - java.sql.SQLException
+                                id: doCatch-495f
+                              - steps:
+                                  - step:
+                                      steps:
+                                        - setHeader:
+                                            name: message
+                                            id: setHeader-7a35
+                                            expression:
+                                              simple:
+                                                expression: Required fields are not present
+                                                id: simple-4657
+                                        - setHeader:
+                                            name: responseCode
+                                            id: setHeader-d850
+                                            expression:
+                                              simple:
+                                                expression: "400"
+                                                id: simple-8690
+                                        - bean:
+                                            id: bean-d504
+                                            ref: notesBean
+                                            method: sendErrorResponse
+                                      id: step-b415
+                                exception:
+                                  - java.lang.Exception
+                                id: doCatch-c1fe
+                            id: doTry-a917
+                      id: when-aad7
+                      expression:
+                        simple:
+                          expression: ${exchangeProperty[authorized]} == "true"
+                          id: simple-6567
+                    - steps:
+                        - bean:
+                            id: bean-6814
+                            ref: notesBean
+                            method: convertToJson
+                      id: when-664e
+                      expression:
+                        simple:
+                          expression: ${exchangeProperty[error]} == "true"
+                          id: simple-4c94
+                  id: choice-b979
+                  otherwise:
+                    steps:
+                      - step:
+                          steps:
+                            - setHeader:
+                                name: message
+                                id: setHeader-010a
+                                expression:
+                                  simple:
+                                    expression: Login to perform this action
+                                    id: simple-d94b
+                            - setHeader:
+                                name: responseCode
+                                id: setHeader-61d3
+                                expression:
+                                  simple:
+                                    expression: "401"
+                                    id: simple-3e59
+                            - bean:
+                                id: bean-28cb
+                                ref: notesBean
+                                method: sendMessage
+                          id: step-05ea
+                    id: otherwise-0647
+            doCatch:
+              - steps:
+                  - step:
+                      steps:
+                        - setHeader:
+                            name: message
+                            id: setHeader-226d
+                            expression:
+                              simple:
+                                expression: Required fields are not present
+                                id: simple-7d9e
+                        - setHeader:
+                            name: responseCode
+                            id: setHeader-e7b0
+                            expression:
+                              simple:
+                                expression: "400"
+                                id: simple-2d9a
+                        - bean:
+                            id: bean-b3c6
+                            ref: notesBean
+                            method: sendErrorResponse
+                      id: step-b724
+                exception:
+                  - java.lang.Exception
+                id: doCatch-8aec
+            id: doTry-a98c
+        - marshal:
+            id: marshal-314e
+            json:
+              id: json-6953
+              library: gson
+      id: from-e109
+    id: createNote
+- route:
+    from:
+      uri: direct:getAllNotes
+      steps:
+        - step:
+            steps:
+              - bean:
+                  id: bean-c7ff
+                  ref: notesBean
+                  method: setQueryParams
+              - bean:
+                  id: bean-69ba
+                  ref: notesBean
+                  method: getAllNotes
+            id: step-dabd
+        - to:
+            uri: direct:authorize
+            id: to-3f3d
+        - choice:
+            when:
+              - steps:
+                  - step:
+                      steps:
+                        - bean:
+                            id: bean-48fd
+                            ref: loginBean
+                            method: getUserId
+                        - bean:
+                            id: bean-0469
+                            ref: notesBean
+                            method: getAllNotes
+                      id: step-90f6
+                  - doTry:
+                      steps:
+                        - choice:
+                            when:
+                              - steps:
+                                  - marshal:
+                                      id: marshal-c3a5
+                                      json:
+                                        id: json-a460
+                                        library: jackson
+                                  - to:
+                                      uri: kamelet:mysql-sink
+                                      parameters:
+                                        serverName: "{{notes-service.hostname}}"
+                                        serverPort: "{{notes-service.database.port}}"
+                                        username: root
+                                        password: password
+                                        query: >-
+                                          select * from notes where category like
+                                          CONCAT('%',:#category,'%');
+                                        databaseName: notesdb
+                                      id: to-8119
+                                id: when-4f66
+                                expression:
+                                  method:
+                                    id: method-740d
+                                    ref: notesBean
+                                    method: checkCategoryInBody
+                              - steps:
+                                  - marshal:
+                                      id: marshal-47af
+                                      json:
+                                        id: json-7559
+                                        library: jackson
+                                  - to:
+                                      uri: kamelet:mysql-sink
+                                      parameters:
+                                        serverName: "{{notes-service.hostname}}"
+                                        serverPort: "{{notes-service.database.port}}"
+                                        username: root
+                                        password: password
+                                        query: >-
+                                          select * from notes where title like
+                                          CONCAT('%',:#title,'%')
+                                        databaseName: notesdb
+                                      id: to-aa2e
+                                id: when-f57e
+                                expression:
+                                  method:
+                                    id: method-35b9
+                                    ref: notesBean
+                                    method: checkTitleInBody
+                            id: choice-b132
+                            otherwise:
+                              steps:
+                                - marshal:
+                                    id: marshal-0be4
+                                    json:
+                                      id: json-4d3d
+                                      library: jackson
+                                - to:
+                                    uri: kamelet:mysql-sink
+                                    parameters:
+                                      serverName: "{{notes-service.hostname}}"
+                                      serverPort: "{{notes-service.database.port}}"
+                                      username: root
+                                      password: password
+                                      query: select * from notes;
+                                      databaseName: notesdb
+                                    id: to-161c
+                              id: otherwise-f371
+                      doCatch:
+                        - steps:
+                            - step:
+                                steps:
+                                  - setHeader:
+                                      name: message
+                                      id: setHeader-70fe
+                                      expression:
+                                        simple:
+                                          expression: MySql Connection Error
+                                          id: simple-a6e4
+                                  - setHeader:
+                                      name: responseCode
+                                      id: setHeader-2f32
+                                      expression:
+                                        simple:
+                                          expression: "500"
+                                          id: simple-0efb
+                                  - bean:
+                                      id: bean-5c1f
+                                      ref: notesBean
+                                      method: sendMessage
+                                id: step-cd35
+                          exception:
+                            - java.sql.SQLException
+                          id: doCatch-3df4
+                      id: doTry-51a9
+                  - choice:
+                      when:
+                        - steps:
+                            - step:
+                                steps:
+                                  - setHeader:
+                                      name: message
+                                      id: setHeader-4aaf
+                                      expression:
+                                        simple:
+                                          expression: Notes not found
+                                          id: simple-25c8
+                                  - setHeader:
+                                      name: responseCode
+                                      id: setHeader-dc42
+                                      expression:
+                                        simple:
+                                          expression: "404"
+                                          id: simple-b621
+                                  - bean:
+                                      id: bean-921d
+                                      ref: notesBean
+                                      method: sendMessage
+                                id: step-676d
+                          id: when-79d9
+                          expression:
+                            simple:
+                              expression: ${body.size} == 0
+                              id: simple-42e6
+                      id: choice-b9e0
+                id: when-3032
+                expression:
+                  simple:
+                    expression: ${exchangeProperty[authorized]} == "true"
+                    id: simple-79eb
+              - steps:
+                  - bean:
+                      id: bean-0678
+                      ref: notesBean
+                      method: convertToJson
+                id: when-0948
+                expression:
+                  simple:
+                    expression: ${exchangeProperty[error]} == "true"
+                    id: simple-90f4
+            id: choice-9c19
+            otherwise:
+              steps:
+                - step:
+                    steps:
+                      - setHeader:
+                          name: message
+                          id: setHeader-7445
+                          expression:
+                            simple:
+                              expression: Login to perform this action
+                              id: simple-5e5d
+                      - setHeader:
+                          name: responseCode
+                          id: setHeader-6046
+                          expression:
+                            simple:
+                              expression: "401"
+                              id: simple-a5b7
+                      - bean:
+                          id: bean-4861
+                          ref: notesBean
+                          method: sendMessage
+                    id: step-c096
+              id: otherwise-4e53
+        - marshal:
+            id: marshal-a195
+            json:
+              id: json-018d
+              library: jackson
+      id: from-033f
+    id: getAllNotes
+- route:
+    from:
+      uri: direct:getNoteById
+      steps:
+        - bean:
+            id: bean-189d
+            ref: notesBean
+            method: setNoteId
+        - to:
+            uri: direct:authorize
+            id: to-391c
+        - choice:
+            when:
+              - steps:
+                  - doTry:
+                      steps:
+                        - step:
+                            steps:
+                              - bean:
+                                  id: bean-af4a
+                                  ref: notesBean
+                                  method: getNoteById
+                              - marshal:
+                                  id: marshal-327c
+                                  json:
+                                    id: json-0212
+                                    library: jackson
+                            id: step-4ad9
+                        - to:
+                            uri: kamelet:mysql-sink
+                            parameters:
+                              serverName: "{{notes-service.hostname}}"
+                              serverPort: "{{notes-service.database.port}}"
+                              username: root
+                              password: password
+                              query: select * from notes where noteId=:#id;
+                              databaseName: notesdb
+                            id: to-79fe
+                        - choice:
+                            when:
+                              - steps:
+                                  - step:
+                                      steps:
+                                        - setHeader:
+                                            name: message
+                                            id: setHeader-e575
+                                            expression:
+                                              simple:
+                                                expression: No note found
+                                                id: simple-20bc
+                                        - setHeader:
+                                            name: responseCode
+                                            id: setHeader-e5dd
+                                            expression:
+                                              simple:
+                                                expression: "404"
+                                                id: simple-06ce
+                                        - bean:
+                                            id: bean-4cd2
+                                            ref: notesBean
+                                            method: sendMessage
+                                      id: step-a4f1
+                                id: when-85f5
+                                expression:
+                                  simple:
+                                    expression: ${body.size} == 0
+                                    id: simple-f212
+                                    resultType: boolean
+                            id: choice-08ee
+                      doCatch:
+                        - steps:
+                            - step:
+                                steps:
+                                  - setHeader:
+                                      name: message
+                                      id: setHeader-ca98
+                                      expression:
+                                        simple:
+                                          expression: MySql Connection Error
+                                          id: simple-ef7c
+                                  - setHeader:
+                                      name: responseCode
+                                      id: setHeader-9b12
+                                      expression:
+                                        simple:
+                                          expression: "500"
+                                          id: simple-3faa
+                                  - bean:
+                                      id: bean-ec8d
+                                      ref: notesBean
+                                      method: sendMessage
+                                id: step-f7aa
+                          exception:
+                            - java.sql.SQLException
+                          id: doCatch-47fb
+                      id: doTry-0577
+                id: when-0c88
+                expression:
+                  simple:
+                    expression: ${exchangeProperty[authorized]} == "true"
+                    id: simple-c72f
+              - steps:
+                  - bean:
+                      id: bean-5080
+                      ref: notesBean
+                      method: convertToJson
+                id: when-4628
+                expression:
+                  simple:
+                    expression: ${exchangeProperty[error]} == "true"
+                    id: simple-503c
+            id: choice-a844
+            otherwise:
+              steps:
+                - step:
+                    steps:
+                      - setHeader:
+                          name: message
+                          id: setHeader-b654
+                          expression:
+                            simple:
+                              expression: Login to perform this action
+                              id: simple-3242
+                      - setHeader:
+                          name: responseCode
+                          id: setHeader-bb1d
+                          expression:
+                            simple:
+                              expression: "401"
+                              id: simple-234b
+                      - bean:
+                          id: bean-e65d
+                          ref: notesBean
+                          method: sendMessage
+                    id: step-6224
+              id: otherwise-5120
+        - marshal:
+            id: marshal-5e0e
+            json:
+              id: json-ea04
+              library: jackson
+      id: from-241c
+    id: getNoteById
