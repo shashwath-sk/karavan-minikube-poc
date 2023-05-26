@@ -14,8 +14,8 @@
 - rest:
     post:
       - id: post-7e29
-        path: /register
-        to: direct:register
+        path: /authorize
+        to: direct:authorize
         consumes: application/json
         produces: application/json
         bindingMode: "off"
