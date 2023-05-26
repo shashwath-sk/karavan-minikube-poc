@@ -34,10 +34,6 @@ spec:
                 type: header
                 dataType: string
             path: /login
-            to: direct:authenticate
-            consumes: application/json
-            produces: application/json
-            bindingMode: 'off'
             description: >-
               Authenticate and grant access to the application by providing user
               credentials.
