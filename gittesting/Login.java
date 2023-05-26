@@ -39,7 +39,13 @@ public class Login {
             this.enabled = "true";
             credentials[0] = new Credentials(type, password, temporary);
         }
-    new RuntimeException("Username or password is null");
+    }
+
+    public void getUserCredentials(Exchange exchange) {
+        String username = exchange.getIn().getHeader("username").toString();
+        String password = exchange.getIn().getHeader("password").toString();
+        if (username == null || password == null)
+            throw new RuntimeException("Username or password is null");
         exchange.setProperty("username", username);
         exchange.setProperty("password", password);
     }
@@ -73,8 +79,24 @@ public class Login {
         exchange.setProperty("active", String.valueOf(responseMap.get("active")));
     }
 
+    public void getUserId(Exchange exchange) {
+        String responseAfterAuth = exchange.getIn().getBody(String.class);
+        Gson gson = new Gson();
+        Map<String, String> responseMap = gson.fromJson(responseAfterAuth, Map.class);
+        exchange.setProperty("userId", responseMap.get("sub"));
+        exchange.setProperty("authorized", "true");
+    }
 
-   
+    public void unauthorizedMessage(Exchange exchange) {
+        exchange.setProperty("authorized", "false");
+    }
+
+    // public void getAccessTokenFromBody(Exchange exchange){
+    // String requestBody = exchange.getIn().getBody(String.class);
+    // Gson gson = new Gson();
+    // Map<String, String> requestBodyMap = gson.fromJson(requestBody, Map.class);
+    // exchange.setProperty("access_token", requestBodyMap.get("access_token"));
+    // }
 
     public void getAccessTokenFromBody(Exchange exchange) {
         String requestBody = exchange.getIn().getBody(String.class);
