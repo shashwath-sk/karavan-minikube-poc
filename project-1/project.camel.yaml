@@ -1,0 +1,4 @@
+- restConfiguration:
+    component: undertow
+    host: localhost
+    port: '4000'
