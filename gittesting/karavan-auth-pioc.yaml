@@ -9,7 +9,7 @@ spec:
           - value: 'true'
             key: prettyPrint
         component: undertow
-        scheme: http
+        scheme: https
         host: '{{notes_744.hostname}}'
         port: '{{notes_744.port}}'
         contextPath: /notes_744
@@ -19,7 +19,7 @@ spec:
         apiComponent: openapi
     - rest:
         post:
-          - path: /register
+          - path: /authorizw
             to: direct:register
             consumes: application/json
             produces: application/json
