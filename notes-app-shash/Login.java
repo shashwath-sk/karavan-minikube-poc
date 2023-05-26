@@ -40,16 +40,6 @@ public class Login {
             credentials[0] = new Credentials(type, password, temporary);
         }
     }
-
-    public void getUserCredentials(Exchange exchange) {
-        String username = exchange.getIn().getHeader("username").toString();
-        String password = exchange.getIn().getHeader("password").toString();
-        if (username == null || password == null)
-            throw new RuntimeException("Username or password is null");
-        exchange.setProperty("username", username);
-        exchange.setProperty("password", password);
-    }
-
     public void getUserCredentialsFromBody(Exchange exchange) {
         String requestBody = exchange.getIn().getBody(String.class);
         Gson gson = new Gson();
