@@ -36,7 +36,7 @@ public class Login {
 
         public User(String username, String type, String password, Boolean temporary) {
             this.username = username;
-            this.enabled = "true";
+            this.enabled = "false";
             credentials[0] = new Credentials(type, password, temporary);
         }
     }
