@@ -1,0 +1,42 @@
+- restConfiguration:
+    host: localhost
+    port: '3000'
+    contextPath: /hello
+    apiContextPath: /hello
+    enableCors: true
+- rest:
+    id: rest-3b35
+    get:
+      - id: get-bdf8
+        path: /
+        to: 'direct:ping'
+        consumes: application/json
+        produces: application/json
+        enableCors: true
+    path: /ping
+    consumes: application/json
+    securityDefinitions:
+      restSecurities:
+        restSecurities: {}
+    produces: application/json
+    enableCors: true
+- route:
+    id: ping
+    from:
+      uri: 'direct:ping'
+      id: from-f3ff
+      steps:
+        - setBody:
+            id: setBody-24d1
+            expression:
+              simple:
+                expression: |-
+                  {
+                      message: "pong"
+                  }
+                id: simple-f89d
+        - marshal:
+            id: marshal-a676
+            json:
+              id: json-4bd3
+              library: jackson
