@@ -1,0 +1,23 @@
+- restConfiguration:
+    dataFormatProperty:
+      - key: prettyPrint
+        value: 'true'
+    apiProperty:
+      - key: openapi.version
+        value: 3.20.1
+    component: platform-http
+    scheme: http
+    bindingMode: 'off'
+    enableCors: true
+- rest:
+    id: rest-bfa2
+    get:
+      - id: get-c79f
+        bindingMode: 'off'
+        produces: application/json
+        consumes: application/json
+        enableCors: true
+    consumes: application/json
+    produces: application/json
+    bindingMode: 'off'
+    enableCors: true
